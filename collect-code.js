@@ -30,48 +30,77 @@ function parseConfigArgs(args) {
     const config = { ...defaultConfig };
     const positionalArgs = [];
     
-    for (let i = 0; i < args.length; i++) {
+    let i = 0;
+    while (i < args.length) {
         const arg = args[i];
         
         if (arg === '--extensions' && i + 1 < args.length) {
-            config.extensions = args[i + 1].split(',').map(ext => {
+            const extensionsString = args[i + 1];
+            config.extensions = extensionsString.split(/[, ]+/).map(ext => {
                 const trimmed = ext.trim();
                 return trimmed.startsWith('.') ? trimmed.toLowerCase() : '.' + trimmed.toLowerCase();
-            });
-            i++;
+            }).filter(ext => ext); // Убираем пустые элементы
+            i += 2;
         } else if (arg === '--exclude-dirs' && i + 1 < args.length) {
-            config.excludeDirs = args[i + 1].split(',').map(dir => dir.trim());
-            i++;
+            const excludeDirsString = args[i + 1];
+            console.log(`DEBUG: Исходная строка exclude-dirs: "${excludeDirsString}"`);
+            // Поддерживаем оба формата: через запятую и через пробел
+            config.excludeDirs = excludeDirsString.split(/[, ]+/).map(dir => dir.trim()).filter(dir => dir);
+            console.log(`DEBUG: Результат парсинга:`, config.excludeDirs);
+            i += 2;
         } else if (arg === '--exclude-files' && i + 1 < args.length) {
-            config.excludeFiles = args[i + 1].split(',').map(file => file.trim());
-            i++;
+            const excludeFilesString = args[i + 1];
+            config.excludeFiles = excludeFilesString.split(/[, ]+/).map(file => file.trim()).filter(file => file);
+            i += 2;
         } else if (arg === '--max-size' && i + 1 < args.length) {
             const size = parseFloat(args[i + 1]);
             if (!isNaN(size)) {
-                config.maxFileSize = size * 1024 * 1024; // Конвертируем из MB в bytes
+                config.maxFileSize = size * 1024 * 1024;
             }
-            i++;
+            i += 2;
         } else if (arg === '--config' && i + 1 < args.length) {
-            // Пропускаем аргумент --config
+            i += 2;
+        } else if (arg.startsWith('--')) {
             i++;
-        } else if (!arg.startsWith('--')) {
-            // Позиционные аргументы
+        } else {
             positionalArgs.push(arg);
+            i++;
         }
     }
     
     return { config, positionalArgs };
 }
 
-function shouldExcludeDir(dirName, excludeDirs) {
-    return excludeDirs.includes(dirName);
+// Проверяем, является ли имя директории исключенным
+function isExcludedDir(dirName, excludeDirs) {
+    const result = excludeDirs.includes(dirName);
+    if (result) {
+        console.log(`🚫 Исключаем директорию: ${dirName}`); // Отладка
+    }
+    return result;
 }
 
+// Проверяем, должен ли файл быть включен
 function shouldIncludeFile(fileName, extensions, excludeFiles) {
     const ext = path.extname(fileName).toLowerCase();
-    return extensions.includes(ext) && !excludeFiles.includes(fileName);
+    const hasValidExtension = extensions.includes(ext);
+    const isExcludedFile = excludeFiles.includes(fileName);
+    
+    const result = hasValidExtension && !isExcludedFile;
+    
+    if (!result && (hasValidExtension || !isExcludedFile)) {
+        if (!hasValidExtension) {
+            // console.log(`⏭️  Пропускаем файл (неподдерживаемое расширение): ${fileName}`);
+        }
+        if (isExcludedFile) {
+            console.log(`⏭️  Пропускаем файл (в списке исключений): ${fileName}`);
+        }
+    }
+    
+    return result;
 }
 
+// Рекурсивный поиск файлов
 function getAllCodeFiles(dir, config, fileList = []) {
     try {
         const files = fs.readdirSync(dir);
@@ -80,14 +109,20 @@ function getAllCodeFiles(dir, config, fileList = []) {
             const filePath = path.join(dir, file);
             const stat = fs.statSync(filePath);
             
-            if (stat.isDirectory() && !shouldExcludeDir(path.basename(filePath), config.excludeDirs)) {
-                getAllCodeFiles(filePath, config, fileList);
-            } else if (stat.isFile() && shouldIncludeFile(file, config.extensions, config.excludeFiles)) {
-                const fileSize = stat.size;
-                if (fileSize <= config.maxFileSize) {
-                    fileList.push(filePath);
-                } else {
-                    console.log(`⚠️  Пропущен большой файл: ${filePath} (${(fileSize / 1024 / 1024).toFixed(2)} MB)`);
+            if (stat.isDirectory()) {
+                // Проверяем только имя директории
+                if (!isExcludedDir(file, config.excludeDirs)) {
+                    // Рекурсивно обходим только неисключенные директории
+                    getAllCodeFiles(filePath, config, fileList);
+                }
+                // Если директория исключена, просто пропускаем её полностью
+            } else if (stat.isFile()) {
+                // Для файлов проверяем расширения и исключения
+                if (shouldIncludeFile(file, config.extensions, config.excludeFiles)) {
+                    const fileSize = stat.size;
+                    if (fileSize <= config.maxFileSize) {
+                        fileList.push(filePath);
+                    }
                 }
             }
         });
@@ -138,6 +173,7 @@ function collectCode(rootDir, outputFile = 'all_code.txt', config) {
         console.log(`🔍 Поиск файлов в: ${path.resolve(rootDir)}`);
         console.log(`⚙️  Расширения: ${config.extensions.join(', ')}`);
         console.log(`🚫 Исключенные директории: ${config.excludeDirs.join(', ')}`);
+        console.log(`🗑️  Исключенные файлы: ${config.excludeFiles.join(', ')}`);
         
         const codeFiles = getAllCodeFiles(rootDir, config);
         
@@ -298,9 +334,6 @@ function main() {
     if (positionalArgs.length > 1) {
         outputFile = positionalArgs[1];
     }
-    
-    console.log(`📂 Целевая директория: ${targetDirectory}`);
-    console.log(`📄 Выходной файл: ${outputFile}`);
     
     if (!fs.existsSync(targetDirectory)) {
         console.error(`❌ Директория не найдена: ${targetDirectory}`);
