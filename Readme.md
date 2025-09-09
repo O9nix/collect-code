@@ -1,4 +1,4 @@
-```markdown
+
 # 🛠️ Collect Code CLI
 
 A simple **Node.js CLI tool** for collecting, merging, and analyzing all code files in a project into a single text file.  
@@ -19,9 +19,9 @@ This is especially useful for code reviews, AI-assisted code analysis, documenta
 
 ---
 
-## 📦 Installation
+## 📦 Installation or NPX use
 
-```bash
+```
 # Clone repository
 git clone https://github.com/your-username/collect-code.git
 cd collect-code
@@ -29,14 +29,18 @@ cd collect-code
 # Install globally
 npm install -g
 ```
-
+## 📦NPX use
+```
+# Clone repository
+npx collect-code
+```
 This makes the `collect-code` command available globally.
 
 ---
 
 ## 🚀 Usage
 
-```bash
+```
 collect-code [directory] [output_file] [options]
 ```
 
@@ -65,9 +69,6 @@ collect-code [directory] [output_file] [options]
 # Run with defaults
 collect-code
 
-# Show current config
-collect-code --show-config
-
 # Collect code from ./my-project/ into all_code.txt
 collect-code ./my-project/
 
@@ -83,8 +84,6 @@ collect-code --exclude-dirs node_modules,build,temp
 # Limit file size to 5MB
 collect-code --max-size 5
 
-# Use a config file
-collect-code --config my-config.json
 ```
 
 ---
@@ -107,12 +106,7 @@ collect-code --config my-config.json
 
 ---
 
-## 📜 License
 
-MIT License © 2025  
-Free to use, modify, and distribute.
 
----
-```
 
-Would you like me to also add a **demo screenshot/gif** section (showing the tool running in terminal), so the README feels more engaging?
+
