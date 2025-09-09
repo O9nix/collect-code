@@ -1,10 +1,13 @@
 {
   "name": "collect-code",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Combines code into one file to work with AI",
-  "main": "collect-code.js",
+  "main": "collect-code.js", "bin": {
+    "collect-code": "./collect-code.js"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node collect-code.js",
+    "collect": "node collect-code.js"
   },
   "repository": {
     "type": "git",
