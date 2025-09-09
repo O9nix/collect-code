@@ -29,13 +29,13 @@ cd collect-code
 # Install globally
 npm install -g
 ```
-## 📦NPX use
-```
-# Clone repository
-npx collect-code
-```
 This makes the `collect-code` command available globally.
 
+
+## 📦NPX use
+```
+npx collect-code
+```
 ---
 
 ## 🚀 Usage
