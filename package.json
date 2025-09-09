@@ -1,6 +1,6 @@
 {
   "name": "collect-code",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Combines code into one file to work with AI",
   "main": "collect-code.js", "bin": {
     "collect-code": "./collect-code.js"
