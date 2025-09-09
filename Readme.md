@@ -1,16 +1,25 @@
 # Collect-Code 
 
-### Показать справку
-node collect-code.js --help
+#### Использование: npx collect-code [директория] [имя_файла] [опции]
 
-### Запуск с текущей директории
-node collect-code.js
+Аргументы:
+  директория              Путь к директории проекта (по умолчанию: текущая директория)
+  имя_файла               Имя выходного файла (по умолчанию: all_code.txt)
 
-### Указать конкретную директорию
-node collect-code.js ./my-project/
+Опции:
+  --extensions .js,.ts    Список расширений файлов (через запятую)
+  --exclude-dirs node_modules,dist  Исключенные директории (через запятую)
+  --exclude-files package-lock.json  Исключенные файлы (через запятую)
+  --max-size 5            Максимальный размер файла в MB (по умолчанию: 10)
+  --config config.json    Путь к файлу конфигурации
+  --help, -h              Показать эту справку
 
-### Указать директорию и имя выходного файла
-node collect-code.js ./src/ my-project-code.txt
-
-### Из другой директории
-node collect-code.js ../project/ result.txt
+Примеры:
+npx  collect-code
+npx  collect-code ./my-project/
+npx collect-code ./src/ result.txt
+npx  collect-code --extensions .js,.ts,.css
+npx  collect-code --exclude-dirs node_modules,build,temp
+npx  collect-code --max-size 5
+npx collect-code --config my-config.json
+npx  collect-code ./project/ --extensions .py,.js --exclude-dirs venv
