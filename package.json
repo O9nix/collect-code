@@ -1,0 +1,22 @@
+{
+  "name": "collect-code",
+  "version": "1.0.0",
+  "description": "Combines code into one file to work with AI",
+  "main": "collect-code.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/O9nix/collect-code.git"
+  },
+  "author": "O9nix",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/O9nix/collect-code/issues"
+  },
+  "homepage": "https://github.com/O9nix/collect-code#readme",
+  "dependencies": {
+    "path": "^0.12.7"
+  }
+}
