@@ -28,41 +28,39 @@ function loadConfigFromFile(configPath) {
 // Парсинг аргументов командной строки для конфигурации
 function parseConfigArgs(args) {
     const config = { ...defaultConfig };
+    const positionalArgs = [];
     
-    // Обработка аргументов --extensions, --exclude-dirs, --exclude-files
     for (let i = 0; i < args.length; i++) {
-        switch (args[i]) {
-            case '--extensions':
-                if (args[i + 1]) {
-                    config.extensions = args[i + 1].split(',').map(ext => ext.trim().toLowerCase());
-                    i++;
-                }
-                break;
-            case '--exclude-dirs':
-                if (args[i + 1]) {
-                    config.excludeDirs = args[i + 1].split(',').map(dir => dir.trim());
-                    i++;
-                }
-                break;
-            case '--exclude-files':
-                if (args[i + 1]) {
-                    config.excludeFiles = args[i + 1].split(',').map(file => file.trim());
-                    i++;
-                }
-                break;
-            case '--max-size':
-                if (args[i + 1]) {
-                    const size = parseFloat(args[i + 1]);
-                    if (!isNaN(size)) {
-                        config.maxFileSize = size * 1024 * 1024; // Конвертируем из MB в bytes
-                    }
-                    i++;
-                }
-                break;
+        const arg = args[i];
+        
+        if (arg === '--extensions' && i + 1 < args.length) {
+            config.extensions = args[i + 1].split(',').map(ext => {
+                const trimmed = ext.trim();
+                return trimmed.startsWith('.') ? trimmed.toLowerCase() : '.' + trimmed.toLowerCase();
+            });
+            i++;
+        } else if (arg === '--exclude-dirs' && i + 1 < args.length) {
+            config.excludeDirs = args[i + 1].split(',').map(dir => dir.trim());
+            i++;
+        } else if (arg === '--exclude-files' && i + 1 < args.length) {
+            config.excludeFiles = args[i + 1].split(',').map(file => file.trim());
+            i++;
+        } else if (arg === '--max-size' && i + 1 < args.length) {
+            const size = parseFloat(args[i + 1]);
+            if (!isNaN(size)) {
+                config.maxFileSize = size * 1024 * 1024; // Конвертируем из MB в bytes
+            }
+            i++;
+        } else if (arg === '--config' && i + 1 < args.length) {
+            // Пропускаем аргумент --config
+            i++;
+        } else if (!arg.startsWith('--')) {
+            // Позиционные аргументы
+            positionalArgs.push(arg);
         }
     }
     
-    return config;
+    return { config, positionalArgs };
 }
 
 function shouldExcludeDir(dirName, excludeDirs) {
@@ -163,7 +161,8 @@ function collectCode(rootDir, outputFile = 'all_code.txt', config) {
         
         codeFiles.forEach(filePath => {
             if (isBinaryFile(filePath)) {
-                console.log(`⚠️  Пропущен бинарный файл: ${path.relative(rootDir, filePath)}`);
+                const relativePath = path.relative(rootDir, filePath);
+                console.log(`⚠️  Пропущен бинарный файл: ${relativePath}`);
                 return;
             }
             
@@ -242,11 +241,11 @@ function showHelp() {
   имя_файла               Имя выходного файла (по умолчанию: all_code.txt)
 
 Опции:
-  --extensions .js,.ts    Список расширений файлов (через запятую)
-  --exclude-dirs node_modules,dist  Исключенные директории (через запятую)
-  --exclude-files package-lock.json  Исключенные файлы (через запятую)
-  --max-size 5            Максимальный размер файла в MB (по умолчанию: 10)
-  --config config.json    Путь к файлу конфигурации
+  --extensions ext1,ext2  Список расширений файлов (через запятую)
+  --exclude-dirs dir1,dir2  Исключенные директории (через запятую)
+  --exclude-files file1,file2  Исключенные файлы (через запятую)
+  --max-size number       Максимальный размер файла в MB (по умолчанию: 10)
+  --config file.json      Путь к файлу конфигурации
   --help, -h              Показать эту справку
 
 Примеры:
@@ -274,9 +273,11 @@ function main() {
     let configPath = './collect-code-config.json';
     
     // Проверяем наличие --config аргумента
-    const configIndex = args.indexOf('--config');
-    if (configIndex !== -1 && args[configIndex + 1]) {
-        configPath = args[configIndex + 1];
+    for (let i = 0; i < args.length; i++) {
+        if (args[i] === '--config' && i + 1 < args.length) {
+            configPath = args[i + 1];
+            break;
+        }
     }
     
     // Загружаем конфигурацию из файла если он существует
@@ -284,15 +285,12 @@ function main() {
     config = { ...config, ...fileConfig };
     
     // Переопределяем конфигурацию аргументами командной строки
-    const cliConfig = parseConfigArgs(args);
+    const { config: cliConfig, positionalArgs } = parseConfigArgs(args);
     config = { ...config, ...cliConfig };
     
-    // Извлекаем позиционные аргументы (директория и файл)
+    // Извлекаем позиционные аргументы
     let targetDirectory = './';
     let outputFile = 'all_code.txt';
-    
-    // Находим позиционные аргументы (не являющиеся опциями)
-    const positionalArgs = args.filter(arg => !arg.startsWith('--') && !['extensions', 'exclude-dirs', 'exclude-files', 'max-size', 'config'].includes(arg));
     
     if (positionalArgs.length > 0) {
         targetDirectory = positionalArgs[0];
@@ -300,6 +298,9 @@ function main() {
     if (positionalArgs.length > 1) {
         outputFile = positionalArgs[1];
     }
+    
+    console.log(`📂 Целевая директория: ${targetDirectory}`);
+    console.log(`📄 Выходной файл: ${outputFile}`);
     
     if (!fs.existsSync(targetDirectory)) {
         console.error(`❌ Директория не найдена: ${targetDirectory}`);
